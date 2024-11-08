@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "546680573727",
+    "project_id": "visionayurvednagpur",
+    "storage_bucket": "visionayurvednagpur.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:546680573727:android:e9e970cbffd33d9794aa2a",
+        "android_client_info": {
+          "package_name": "visionayu.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBisBhQYdu6aB7S5Il5XxOLKsY-zStvyKg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

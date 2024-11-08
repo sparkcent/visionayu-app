@@ -47,8 +47,10 @@ build/Release
 
 # Dependency directories
 node_modules/
-android/
-ios/
+android/.gradle/
+android/.idea/
+android/build/
+android/app/build/
 # Optional npm cache directory
 .npm
 
