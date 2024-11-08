@@ -1,0 +1,59 @@
+name: Build iOS App
+
+on:
+  push:
+    branches:
+      - main  # Trigger workflow on push to main branch
+  pull_request:
+    branches:
+      - main  # Trigger workflow on PR to main branch
+
+jobs:
+  build:
+    runs-on: macos-latest  # Specify macOS as the runner for iOS builds
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2  # Checkout the repository to access files
+
+    - name: Set up Ruby (for CocoaPods)
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '2.7'  # Set the Ruby version (required for CocoaPods)
+
+    - name: Install dependencies with CocoaPods
+      run: |
+        cd visionayu/app/ios  # Navigate to the iOS directory
+        pod install  # Install CocoaPods dependencies
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'  # Specify Node.js version
+
+    - name: Install dependencies with npm
+      run: |
+        cd visionayu/app  # Go to the React Native app directory
+        npm install  # Install the JavaScript dependencies
+
+    - name: Build the iOS app
+      run: |
+        cd visionayu/app/ios  # Navigate to the iOS folder
+        xcodebuild -workspace app.xcworkspace -scheme app -sdk iphoneos -configuration Release clean build # Clean and build the app
+
+    - name: Archive iOS build
+      run: |
+        cd visionayu/app/ios  # Navigate to iOS directory
+        xcodebuild -workspace app.xcworkspace -scheme app -sdk iphoneos -configuration Release archive -archivePath $PWD/build/app.xcarchive
+
+    - name: Export iOS IPA
+      run: |
+        cd visionayu/app/ios  # Navigate to iOS folder
+        xcodebuild -exportArchive -archivePath $PWD/build/app.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath $PWD/build
+
+    - name: Upload IPA to GitHub Release (Optional)
+      if: success()
+      uses: softprops/action-gh-release@v1
+      with:
+        files: visionayu/app/ios/build/*.ipa  # Upload the generated IPA to GitHub release
+
