@@ -38,14 +38,14 @@ jobs:
     - name: Build the iOS app
       run: |
         cd ios
-        xcodebuild -workspace app.xcworkspace -scheme app -sdk iphoneos -configuration Release clean build \
+        xcodebuild -workspace app.xcworkspace -scheme app -sdk iphoneos -configuration Release clean build -allowProvisioningUpdates \
           CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM="5L88RQB54B"
 
     - name: Archive iOS build
       run: |
         cd ios
         xcodebuild -workspace app.xcworkspace -scheme app -sdk iphoneos -configuration Release archive \
-          -archivePath $PWD/build/app.xcarchive \
+          -archivePath $PWD/build/app.xcarchive -allowProvisioningUpdates \
           CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM="5L88RQB54B"
 
     - name: Export iOS IPA
