@@ -30,7 +30,6 @@ jobs:
 
     - name: Install dependencies with npm
       run: |
-        cd visionayu/app  # Go to the React Native app directory
         npm install  # Install the JavaScript dependencies
 
     - name: Install dependencies with CocoaPods
