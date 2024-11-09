@@ -33,7 +33,7 @@ jobs:
     - name: Install dependencies with CocoaPods
       run: |
         cd ios
-        pod install
+        pod install --repo-update
 
     - name: Build the iOS app
       run: |
