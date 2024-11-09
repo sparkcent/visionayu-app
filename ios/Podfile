@@ -13,8 +13,10 @@ if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
 end
-
+use_modular_headers!
 target 'app' do
+  pod 'Firebase/Core'
+  pod 'Firebase/Auth'
   config = use_native_modules!
 
   use_react_native!(
