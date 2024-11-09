@@ -1,12 +1,10 @@
+platform :ios, '13.4'
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 
-platform :ios, '13.4'
 prepare_react_native_project!
 
-# Enable use_frameworks if USE_FRAMEWORKS is set in the environment
 linkage = ENV['USE_FRAMEWORKS']
 if linkage
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
 end
 
@@ -15,8 +13,7 @@ use_modular_headers!
 target 'app' do
   pod 'Firebase/Core'
   pod 'Firebase/Auth'
-  
-  # Automatically detect and include native modules
+
   config = use_native_modules!
 
   use_react_native!(
@@ -26,15 +23,9 @@ target 'app' do
 
   target 'appTests' do
     inherit! :complete
-    # Add any additional Pods for testing if required
   end
 
   post_install do |installer|
-    # Configure React Native post-install settings
-    react_native_post_install(
-      installer,
-      config[:reactNativePath],
-      :mac_catalyst_enabled => false
-    )
+    react_native_post_install(installer, config[:reactNativePath], :mac_catalyst_enabled => false)
   end
 end
