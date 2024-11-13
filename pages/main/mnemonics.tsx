@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions, Linking, Modal } from 'react-native';
 import { TabsProvider, Tabs, TabScreen } from 'react-native-paper-tabs';
 import Collapsible from 'react-native-collapsible';
 import ImageModal from 'react-native-image-modal';
 import { BASE_URL, MAIN_URL,Section } from '../types';
 import { ActivityIndicator, Icon } from 'react-native-paper';
 import Video from 'react-native-video';
-
+import Pdf from 'react-native-pdf';
 
 const TextTab: React.FC<{ sections: Section[] }> = ({ sections }) => {
   const [collapsed, setCollapsed] = useState<boolean[]>(sections.map(() => true));
@@ -118,6 +118,66 @@ const VideoTab: React.FC<{ sections: any[] }> = ({ sections }) => {
     );
 };
 
+const PdfTab: React.FC<{ sections: any[] }> = ({ sections }) => {
+  const [currentPdf, setCurrentPdf] = useState<string | null>(null);
+  const [isPdfModalVisible, setPdfModalVisible] = useState(false);
+  useEffect(() => {
+    if (sections.length > 0) {
+      const initialSource = MAIN_URL + sections[0].source;
+      setCurrentPdf(initialSource);
+    }
+  }, [sections]);
+
+  const handleOpenPdf = (source: string) => {
+    const encodedUrl = encodeURI(MAIN_URL + source);
+    console.log(encodedUrl)
+    setCurrentPdf(encodedUrl);
+    setPdfModalVisible(true);
+  };
+  const handleClosePdf = () => {
+    setPdfModalVisible(false);
+    setCurrentPdf(null);
+  };
+
+  return (
+    <View style={styles.tabContainer}>
+      <FlatList
+        data={sections}
+        style={styles.fullwidth}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.videoItem} onPress={() => handleOpenPdf(item.source)}>
+            <View style={styles.thumbnailContainer}>
+              <Image 
+                source={require('../../assets/pdf.jpg')} 
+                style={styles.thumbnail} 
+                resizeMode="contain" 
+              />
+              <Text style={styles.title}>{item.title}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
+      />
+      <Modal visible={isPdfModalVisible} onRequestClose={handleClosePdf} animationType="slide">
+        <View style={styles.modalContainer}>
+          {currentPdf && (
+            <Pdf
+              source={{ uri: currentPdf }}
+              style={styles.pdfViewer}
+              onError={(error) => console.log('PDF loading error:', error)}
+              onLoadComplete={(numberOfPages) => console.log(`Total pages: ${numberOfPages}`)}
+            />
+          )}
+          <TouchableOpacity onPress={handleClosePdf} style={styles.closeButton}>
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
 export default function MnemonicsScreen() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Section[]>([]);
@@ -147,6 +207,7 @@ export default function MnemonicsScreen() {
   const textSections = data.filter(item => item.format == 'Text');
   const imageSections = data.filter(item => item.format == 'Image');
   const videoSections = data.filter(item => item.format == 'Video');
+  const pdfSections = data.filter(item => item.format == 'Pdf');
 
   return (
     <TabsProvider defaultIndex={0}>
@@ -159,6 +220,9 @@ export default function MnemonicsScreen() {
         </TabScreen>
         <TabScreen label="Video">
           <VideoTab sections={videoSections} />
+        </TabScreen>
+        <TabScreen label="Pdf">
+          <PdfTab sections={pdfSections} />
         </TabScreen>
       </Tabs>
     </TabsProvider>
@@ -273,5 +337,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pdfViewer: {
+    flex: 1,
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   }
 });

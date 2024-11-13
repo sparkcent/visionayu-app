@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, Alert, StatusBar } from 'react-native';
-import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../types';
+import { BASE_URL, MAIN_URL } from '../types';
 import Video from 'react-native-video';
 import { ActivityIndicator, Icon, IconButton, Menu } from 'react-native-paper';
 import Orientation from 'react-native-orientation-locker';
+import RNBlobUtil from 'react-native-blob-util';
+import { useRoute } from '@react-navigation/native';
 
 export default function VideoDetailsScreen() {
+    const searchdata:any = useRoute().params;
+    const headerFour = Array.isArray(searchdata.headerFour) ? searchdata.headerFour[0] : searchdata.headerFour;
     const [videoList, setVideoList] = useState<any[]>([]);
     const [selectedVideo, setSelectedVideo] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -48,8 +51,8 @@ export default function VideoDetailsScreen() {
         const fetchExams = async () => {
             try {
                 const token = await AsyncStorage.getItem('authToken');
-                const response = await fetch(`${BASE_URL}videoList&token=${token}`);
-                
+                const response = await fetch(`${BASE_URL}videoList&headerFour=${headerFour}&token=${token}`);
+                console.log(response)
                 const result = await response.json();
                 if (result && result.length > 0) {
                     setVideoList(result);
@@ -75,40 +78,42 @@ export default function VideoDetailsScreen() {
     const handleDownload = async () => {
         setDownloading(true);
         setDownloadProgress(0);
+    
         try {
-            const uri = selectedVideo.uri;
-            const fileUri = `${RNFS.DocumentDirectoryPath}/${selectedVideo.id}.mp4`;
-
-            const downloadOptions = {
-                fromUrl: uri,
-                toFile: fileUri,
-                begin: () => {},
-                progress: (data: any) => {
-                    const progress = data.bytesWritten / data.contentLength;
-                    setDownloadProgress(progress);
+            const uri = MAIN_URL+selectedVideo.uri;
+            const filePath = `${RNBlobUtil.fs.dirs.DocumentDir}/${uri}`;
+    
+            RNBlobUtil.config({
+                path: filePath,
+            })
+            .fetch('GET', uri)
+            .progress({ interval: 100 }, (received, total) => {
+                const progress = received / total;
+                setDownloadProgress(progress);
+            })
+            .then(async (res) => {
+                if (res && res.path()) {
+                    setDownloadedUri(res.path());
+                    const newDownloadedVideos = { ...downloadedVideos, [selectedVideo.id]: res.path() };
+                    setDownloadedVideos(newDownloadedVideos);
+                    await AsyncStorage.setItem('downloadedVideos', JSON.stringify(newDownloadedVideos));
+                    Alert.alert('Download complete!');
                 }
-            };
-
-            const downloadResult = RNFS.downloadFile(downloadOptions);
-            const result = await downloadResult.promise;
-
-            if (result && result.statusCode === 200) {
-                setDownloadedUri(fileUri);
-                const newDownloadedVideos = { ...downloadedVideos, [selectedVideo.id]: fileUri };
-                setDownloadedVideos(newDownloadedVideos);
-                await AsyncStorage.setItem('downloadedVideos', JSON.stringify(newDownloadedVideos));
-                Alert.alert('Download complete!');
-            } else {
-                console.error('Download failed: Unexpected status code');
-            }
+            })
+            .catch((error) => {
+                console.error('Download failed:', error);
+                Alert.alert('Download failed');
+            })
+            .finally(() => {
+                setDownloading(false);
+                setDownloadProgress(0);
+            });
         } catch (error) {
-            console.error('Error downloading video:', error);
-        } finally {
+            console.error('Error during download:', error);
             setDownloading(false);
             setDownloadProgress(0);
         }
     };
-
     const handleCancelDownload = async () => {
         setDownloading(false);
         setDownloadProgress(0);
@@ -116,6 +121,7 @@ export default function VideoDetailsScreen() {
     };
 
     const handleVideoSelect = async (item: any) => {
+        console.log(item)
         setDownloadedUri(downloadedVideos[item.id] || '');
         setSelectedVideo(item);
         setIsPlaying(true);
@@ -141,7 +147,7 @@ export default function VideoDetailsScreen() {
                 <Video
                     resizeMode='contain'
                     style={styles.video}
-                    source={{ uri: downloadedUri || selectedVideo?.uri }}
+                    source={{ uri: downloadedUri || MAIN_URL + selectedVideo?.uri }}
                     paused={!isPlaying}
                     controls={true}
                     rate={playbackRate}
@@ -156,13 +162,7 @@ export default function VideoDetailsScreen() {
                     <Menu
                         visible={visible}
                         onDismiss={closeMenu}
-                        anchor={
-                        <IconButton
-                            icon="speedometer"
-                            size={24}
-                            onPress={openMenu}
-                        />
-                        }
+                        anchor={ <IconButton icon="speedometer" size={24} onPress={openMenu} /> }
                     >
                         <Menu.Item onPress={() => { setPlaybackRate(0.25); closeMenu(); }} title="0.5x" />
                         <Menu.Item onPress={() => { setPlaybackRate(1.0); closeMenu(); }} title="1x" />

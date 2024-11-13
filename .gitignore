@@ -70,3 +70,8 @@ android/app/build/
 .env
 .angular
 .vscode
+
+# Expo
+.expo
+dist/
+web-build/

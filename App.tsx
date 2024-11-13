@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet, View, Dimensions, StatusBar, TouchableOpacity, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Video from 'react-native-video';
 import { DataProvider } from './pages/DataContext';
 import { PaperProvider } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,6 +27,7 @@ import VideoDetailsScreen from './pages/main/videoDetails';
 import PaidTestScreen from './pages/main/paidtest';
 import OtherExamsScreen from './pages/main/otherExams';
 import ProfileScreen from './pages/main/profile';
+import Video from 'react-native-video';
 
 const IntroVideo: React.FC<{ onVideoEnd: () => void }> = ({ onVideoEnd }) => {
   const screenWidth = Dimensions.get('window').width;
