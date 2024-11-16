@@ -3,7 +3,7 @@ import { ListRenderItem, StyleSheet, View, Text, TouchableOpacity, Modal, Dimens
 import { TabsProvider, Tabs, TabScreen } from 'react-native-paper-tabs';
 import { BASE_URL, Exam } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, Button, Icon, IconButton, MD2Colors } from 'react-native-paper';
+import { ActivityIndicator, Button, Chip, Icon, IconButton, MD2Colors } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const AllTab = ({ data }: { data: Exam[] }) => {
@@ -136,12 +136,11 @@ const SolvedTab = ({ data }: { data: Exam[] }) => {
                     <IconButton 
                         icon="motion-play" 
                         size={44} 
-                        onPress={() => {
-                            navigation.navigate('Review', {
-                                myexamid:item.myexamid
-                            });
-                        }}
+                        onPress={() => {navigation.navigate('Review', {myexamid:item.myexamid});}}
                     />
+                    <Chip style={styles.attemptRank} icon="trophy" 
+                    onPress={() => {navigation.navigate('Ranking', {examid:item.examid,title:item.title});}}
+                    >Ranking</Chip>
                 </View>
             </View>
         </View>
@@ -183,7 +182,6 @@ export default function PaidTestListScreen() {
                 setAllFree(result.allFree);
                 setSolved(result.solved);
             } catch (error) {
-                console.error("Error fetching data: ", error);
             } finally {
                 setLoading(false);
             }
@@ -223,6 +221,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    attemptRank:{
+        marginBottom:10
     },
     tabLabel: {
         color: 'black',

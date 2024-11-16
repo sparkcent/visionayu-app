@@ -17,7 +17,6 @@ export default function AboutScreen() {
             setData(result);
             setLoading(false);
         } catch (error) {
-            console.error('Error fetching data:', error);
             setLoading(false);
         }
         };

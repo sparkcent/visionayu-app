@@ -1,5 +1,5 @@
-export const MAIN_URL = 'https://dev.visionayunagpur.com/server/';
-export const BASE_URL = 'https://dev.visionayunagpur.com/server/app.php?type=';
+export const MAIN_URL = 'https://tst.visionayunagpur.com/server/';
+export const BASE_URL = 'https://tst.visionayunagpur.com/server/app.php?type=';
 
 export interface Item {
   id: number;
@@ -19,6 +19,7 @@ export interface Exam {
   marks:any;
   submitted:any;
   myexamid:any;
+  examid:any;
 };
 
 export interface Question {

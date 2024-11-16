@@ -4,6 +4,7 @@ import { Button, TextInput, useTheme } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { BASE_URL } from './types';
+import Toast from 'react-native-toast-message';
 export default function LoginScreen() {
     const { colors } = useTheme();
     const [email, setEmail] = useState({ value: '', error: '' });
@@ -24,7 +25,6 @@ export default function LoginScreen() {
 
         setLoading(true);
         setGeneralError('');
-
         try {
             const response = await fetch(`${BASE_URL}checkUser`, {
                 method: 'POST',
@@ -32,13 +32,26 @@ export default function LoginScreen() {
                 body: JSON.stringify({ email: email.value, password: password.value }),
             });
             const result = await response.json();
-            if (!response.ok) {
-                throw new Error(result.message || 'Something went wrong');
+            if (result.status == 'failed') {
+                Toast.show({
+                    type: 'error',  
+                    position: 'top',  
+                    text1: 'Login Failed', 
+                    text2: result.message, 
+                });
+            }else{
+                await AsyncStorage.setItem('authToken', result.token);
+                await AsyncStorage.setItem('authName', result.name);
+                navigation.navigate('HomeScreen');
             }
-            await AsyncStorage.setItem('authToken', result.token);
-            await AsyncStorage.setItem('authName', result.name);
-            navigation.navigate('HomeScreen');
+            
         } catch (error: any) {
+            Toast.show({
+                type: 'error',  
+                position: 'top',  
+                text1: 'Login Failed', 
+                text2: 'Something went wrong', 
+            });
             setGeneralError(error.message);
         } finally {
             setLoading(false);

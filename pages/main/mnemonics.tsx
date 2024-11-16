@@ -6,7 +6,8 @@ import ImageModal from 'react-native-image-modal';
 import { BASE_URL, MAIN_URL,Section } from '../types';
 import { ActivityIndicator, Icon } from 'react-native-paper';
 import Video from 'react-native-video';
-import Pdf from 'react-native-pdf';
+import WebView from 'react-native-webview';
+import Toast from 'react-native-toast-message';
 
 const TextTab: React.FC<{ sections: Section[] }> = ({ sections }) => {
   const [collapsed, setCollapsed] = useState<boolean[]>(sections.map(() => true));
@@ -75,7 +76,9 @@ const VideoTab: React.FC<{ sections: any[] }> = ({ sections }) => {
           setCurrentVideo(MAIN_URL + source);
           setIsPlaying(true);
       } else if (youtube) {
-          Linking.openURL(youtube).catch(err => console.error("Failed to open URL: ", err));
+          Linking.openURL(youtube).catch(err =>
+            Toast.show({type: 'error',position: 'top', text1: 'Failed to open URL', text2: err})
+          );
       }
     };
   
@@ -119,8 +122,10 @@ const VideoTab: React.FC<{ sections: any[] }> = ({ sections }) => {
 };
 
 const PdfTab: React.FC<{ sections: any[] }> = ({ sections }) => {
-  const [currentPdf, setCurrentPdf] = useState<string | null>(null);
+  const [currentPdf, setCurrentPdf] = useState<any>('');
   const [isPdfModalVisible, setPdfModalVisible] = useState(false);
+  const [loadingPdf, setLoadingPdf] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (sections.length > 0) {
       const initialSource = MAIN_URL + sections[0].source;
@@ -129,16 +134,18 @@ const PdfTab: React.FC<{ sections: any[] }> = ({ sections }) => {
   }, [sections]);
 
   const handleOpenPdf = (source: string) => {
-    const encodedUrl = encodeURI(MAIN_URL + source);
-    console.log(encodedUrl)
-    setCurrentPdf(encodedUrl);
+    const formattedUrl = `https://drive.google.com/viewerng/viewer?embedded=true&url=${MAIN_URL}${source}`;
+    setCurrentPdf(formattedUrl);
+    setError(null);
+    setLoadingPdf(true);
     setPdfModalVisible(true);
   };
   const handleClosePdf = () => {
     setPdfModalVisible(false);
     setCurrentPdf(null);
+    setLoadingPdf(false);
+    setError(null);
   };
-
   return (
     <View style={styles.tabContainer}>
       <FlatList
@@ -159,19 +166,21 @@ const PdfTab: React.FC<{ sections: any[] }> = ({ sections }) => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
       />
-      <Modal visible={isPdfModalVisible} onRequestClose={handleClosePdf} animationType="slide">
+      <Modal visible={isPdfModalVisible} onRequestClose={handleClosePdf}>
         <View style={styles.modalContainer}>
-          {currentPdf && (
-            <Pdf
-              source={{ uri: currentPdf }}
+            <WebView
               style={styles.pdfViewer}
-              onError={(error) => console.log('PDF loading error:', error)}
-              onLoadComplete={(numberOfPages) => console.log(`Total pages: ${numberOfPages}`)}
+              source={{ uri: currentPdf }}
+              onLoad={() => {
+                setLoadingPdf(false);
+              }}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                setError('Failed to load PDF. Please try again.');
+                setLoadingPdf(false);
+              }}
+              originWhitelist={['*']}
             />
-          )}
-          <TouchableOpacity onPress={handleClosePdf} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
         </View>
       </Modal>
     </View>
@@ -190,7 +199,6 @@ export default function MnemonicsScreen() {
         setData(result);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching data:', error);
         setLoading(false);
       }
     };

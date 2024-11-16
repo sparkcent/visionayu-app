@@ -4,6 +4,7 @@ import { ActivityIndicator, Button, Chip, Icon, RadioButton, } from 'react-nativ
 import { BASE_URL, MAIN_URL, Question } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 const { width: screenWidth } = Dimensions.get('window');
 const NUM_ITEMS_PER_ROW = 10;
@@ -24,8 +25,14 @@ export default function ExamScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [examResponse, setExamResponse] = useState('');
-
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [isTimeUp, setIsTimeUp] = useState(false);
   useEffect(() => {
+    const fetchAuthToken = async () => {
+      const token = await AsyncStorage.getItem('authToken');
+      setAuthToken(token); // Save it to state
+    };
+    fetchAuthToken();
     const fetchQuestions = async () => {
       try {
         const response = await fetch(`${BASE_URL}getQuestions&qsbankid=${searchdata.qbid}&questions=${searchdata.questions}`);
@@ -34,11 +41,10 @@ export default function ExamScreen() {
           setTimer(parseInt(timeString) * 60);
           setQuestions(data);
           setQuestionStatus(Array(data.length).fill('skipped') as []);
-          setLoading(false);
         } else {
           setError('Invalid data format.');
-          setLoading(false);
         }
+        setLoading(false);
       } catch (err) {
         setError('Failed to load questions.');
         setLoading(false);
@@ -47,11 +53,13 @@ export default function ExamScreen() {
     fetchQuestions();
     const interval = setInterval(() => {
       setTimer((prev) => {
-        if (prev > 1 || prev == 0) {
+        if (prev > 1 || prev === 0) {
           return prev - 1;
         } else {
           clearInterval(interval);
-          confirmSubmit();
+          setIsTimeUp(true);
+          setModalVisible(true);
+          setLoadingExam(false);
           return 0;
         }
       });
@@ -61,7 +69,6 @@ export default function ExamScreen() {
   }, [searchdata.id, searchdata.time]);
 
   let currentQuestion = questions[currentQuestionIndex] || {};
-  let solvedQuestions = Object.values(selectedOptions).filter(option => option !== null).length;
   const options = [
     { key: 'optionA', value: currentQuestion.optionA },
     { key: 'optionB', value: currentQuestion.optionB },
@@ -72,55 +79,53 @@ export default function ExamScreen() {
     setModalVisible(false);
     setLoadingExam(false);
   }, []);
-  const confirmSubmit = (async () => {
-    currentQuestion = questions[currentQuestionIndex] || {};
-    solvedQuestions = Object.values(selectedOptions).filter(option => option != null).length;
-    setLoadingExam(true);
-    
-    submitExamData();
-    setIsModalVisible(true);
-  });
-  const submitExamData = async() => {
+  const confirmSubmit = async () => {
       const submissionData = questions.map((question) => {
         return {
           id: question.id,
           option: selectedOptions[question.id] || '',
         };
       });
-      const response = await fetch(`${BASE_URL}submitExam`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          questions: submissionData,
-          token: await AsyncStorage.getItem('authToken'),
-          examid: searchdata.examid,
-          solved: solvedQuestions,
-          totalQuestion: searchdata.questions,
-          correct: searchdata.correct
-        }),
-      });
-      const result = await response.json();
-      if (response.ok) {
-        if(result.status == 'success'){
-          setExamResponse(result);
-          setModalVisible(false);
-          setLoading(false)
-        }else{
-          
+      if(submissionData.length > 0){
+        const response = await fetch(`${BASE_URL}submitExam`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questions: submissionData,
+            token: authToken,
+            examid: searchdata.examid,
+            solved: Object.values(selectedOptions).filter(option => option !== null).length,
+            totalQuestion: searchdata.questions,
+            correct: searchdata.correct,
+          }),
+        });
+    
+        const result = await response.json();
+        if (response.ok) {
+          if (result.status === 'success') {
+            setIsModalVisible(true);
+            setExamResponse(result);
+            setModalVisible(false);
+            setLoading(false);
+          } else {
+            Toast.show({type: 'error', position: 'top', text1: 'Submit Failed', text2: 'Submission failed' + result.message});
+          }
+        } else {
+          Toast.show({type: 'error',position: 'top', text1: 'Submit Failed', text2: 'Network error' + result.message});
         }
-        
-      } else {
+      }else{
+        Toast.show({type: 'error', position: 'top', text1: 'Submit Failed', text2: 'Getting Blank Question Set'});
       }
+      
   };
   const handleOptionSelect = (questionId: string, optionKey: string) => {
-    const currentOption = selectedOptions[questionId];
-    if (currentOption == optionKey) {
-      setSelectedOptions((prev) => ({ ...prev, [questionId]: null }));
-    } else {
-      setSelectedOptions((prev) => ({ ...prev, [questionId]: optionKey }));
-    }
+    setSelectedOptions((prevSelectedOptions) => {
+      const currentOption = prevSelectedOptions[questionId];
+      return {
+        ...prevSelectedOptions,
+        [questionId]: currentOption === optionKey ? null : optionKey,
+      };
+    });
   };
 
   const handleErase = () => {
@@ -186,6 +191,7 @@ export default function ExamScreen() {
   const checkResult = (examResponse:any) =>{
     setIsModalVisible(false);
     let answered = Object.values(questionStatus).filter(status => status == 'answered').length;
+    let solvedQuestions = Object.values(selectedOptions).filter(option => option !== null).length
     navigation.navigate('Result', {
         name:searchdata.name,
         questions:searchdata.questions,
@@ -328,18 +334,23 @@ export default function ExamScreen() {
                 <View style={styles.modalInfoRow}>
                   <View style={{width:'48%',flexDirection:'row',justifyContent:'space-between'}}>
                     <Text style={styles.modalInfoText}>Solved Qs</Text>
-                    <Text style={[styles.modalInfoText,{minWidth:'10%'}]}>: {solvedQuestions}</Text>
+                    <Text style={[styles.modalInfoText,{minWidth:'10%'}]}>: {Object.values(selectedOptions).filter(option => option !== null).length}</Text>
                   </View>
                   <View style={{width:'48%',flexDirection:'row',justifyContent:'space-between'}}>
                     <Text style={styles.modalInfoText}>Unsolved Qs</Text>
-                    <Text style={[styles.modalInfoText,{minWidth:'10%'}]}>: {Number(searchdata.questions) - solvedQuestions}</Text>
+                    <Text style={[styles.modalInfoText,{minWidth:'10%'}]}>: {Number(searchdata.questions) - (Object.values(selectedOptions).filter(option => option !== null).length)}</Text>
                   </View>
                   
                 </View>
               </View>
               <View style={styles.modalButtonsContainer}>
                 {!loadingexam ? (
-                  <><Button  icon="close"  mode="contained"  onPress={closeModal}  style={styles.cancelButton} labelStyle={styles.buttonLabel}>Cancel</Button></>
+                  <>
+                  {!isTimeUp && (
+                    <Button  icon="close"  mode="contained"  onPress={closeModal}  style={styles.cancelButton} labelStyle={styles.buttonLabel}>Cancel</Button>
+                  )}
+                  
+                  </>
                 ) : (<></>)}
                 <Button icon="check-all"  mode="contained" loading={loadingexam ? true:false} onPress={confirmSubmit} style={styles.submitButton} disabled={loadingexam} labelStyle={styles.buttonLabel}>
                   {loadingexam ? 'Submtting...' : 'Confirm Submit'}

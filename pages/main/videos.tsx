@@ -129,7 +129,6 @@ const VideosScreen = () => {
       let formattedRoutes = headerOneData.map((item: any) => ({ key: item.value.toString(), title: item.name }));
       
       formattedRoutes = formattedRoutes.slice(0, 1);
-      console.log("formattedRoutes",formattedRoutes)
       setRoutes(formattedRoutes);
     };
     fetchRoutes();

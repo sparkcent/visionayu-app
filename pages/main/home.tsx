@@ -120,7 +120,6 @@ export default function HomeScreen() {
         setMotivational(motivational);
       }
     } catch (error) {
-      console.error('Error fetching QOD:', error);
     }
   };
   const selectedOptionValidator = (value: string) => {

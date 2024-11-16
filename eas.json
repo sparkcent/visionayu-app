@@ -1,0 +1,17 @@
+{
+    "build": {
+      "production": {
+        "ios": {
+            "distribution": "store",
+            "channel": "production"
+        }
+      },
+      "development": {
+        "ios": {
+            "distribution": "internal",
+            "channel": "development"
+        }
+      }
+    }
+  }
+  

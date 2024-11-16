@@ -28,6 +28,8 @@ import PaidTestScreen from './pages/main/paidtest';
 import OtherExamsScreen from './pages/main/otherExams';
 import ProfileScreen from './pages/main/profile';
 import Video from 'react-native-video';
+import RankingScreen from './pages/main/ranking';
+import Toast from 'react-native-toast-message';
 
 const IntroVideo: React.FC<{ onVideoEnd: () => void }> = ({ onVideoEnd }) => {
   const screenWidth = Dimensions.get('window').width;
@@ -100,6 +102,7 @@ function App(): React.JSX.Element {
                 />
                 <Stack.Screen name="FreeTest" component={FreeTestScreen} options={{ title: 'Free Test', headerShown: true }} />
                 <Stack.Screen name="Review" component={TestReviewScreen} options={{ title: 'Review Test', headerShown: true }} />
+                <Stack.Screen name="Ranking" component={RankingScreen} options={{ title: 'Ranking', headerShown: true }} />
                 <Stack.Screen name="Exam" component={ExamScreen} options={{ title: 'Exam', headerShown: true }} />
                 <Stack.Screen name="Result" component={TestResultScreen} options={{ title: 'Test', headerShown: true }} />
                 <Stack.Screen name="mnemonics" component={MnemonicsScreen} options={{ title: 'Mnemonics', headerShown: true }} />
@@ -119,6 +122,7 @@ function App(): React.JSX.Element {
           </DataProvider>
         </SafeAreaView>
       </NavigationContainer>
+      <Toast />
     </PaperProvider>
   );
 }

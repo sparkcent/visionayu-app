@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Dimensions, Linking, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Dimensions, Linking, Image, Modal } from 'react-native';
 import { TabsProvider, Tabs, TabScreen } from 'react-native-paper-tabs';
 import Collapsible from 'react-native-collapsible';
 import ImageModal from 'react-native-image-modal';
 import { BASE_URL, MAIN_URL } from '../types';
 import { ActivityIndicator, Icon } from 'react-native-paper';
 import Video from 'react-native-video';
+import WebView from 'react-native-webview';
+import Toast from 'react-native-toast-message';
 
 interface Section {
   title: string;
@@ -81,7 +83,9 @@ const VideoTab: React.FC<{ sections: any[] }> = ({ sections }) => {
           setCurrentVideo(MAIN_URL + source);
           setIsPlaying(true);
       } else if (youtube) {
-          Linking.openURL(youtube).catch(err => console.error("Failed to open URL: ", err));
+          Linking.openURL(youtube).catch(err => 
+            Toast.show({type: 'error',position: 'top', text1: 'Failed to open URL', text2: err})
+          );
       }
     };
     return (
@@ -122,6 +126,71 @@ const VideoTab: React.FC<{ sections: any[] }> = ({ sections }) => {
       </View>
     );
 };
+const PdfTab: React.FC<{ sections: any[] }> = ({ sections }) => {
+  const [currentPdf, setCurrentPdf] = useState<any>('');
+  const [isPdfModalVisible, setPdfModalVisible] = useState(false);
+  const [loadingPdf, setLoadingPdf] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (sections.length > 0) {
+      const initialSource = MAIN_URL + sections[0].source;
+      setCurrentPdf(initialSource);
+    }
+  }, [sections]);
+
+  const handleOpenPdf = (source: string) => {
+    const formattedUrl = `https://drive.google.com/viewerng/viewer?embedded=true&url=${MAIN_URL}${source}`;
+    setCurrentPdf(formattedUrl);
+    setError(null);
+    setLoadingPdf(true);
+    setPdfModalVisible(true);
+  };
+  const handleClosePdf = () => {
+    setPdfModalVisible(false);
+    setCurrentPdf(null);
+    setLoadingPdf(false);
+    setError(null);
+  };
+  return (
+    <View style={styles.tabContainer}>
+      <FlatList
+        data={sections}
+        style={styles.fullwidth}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.videoItem} onPress={() => handleOpenPdf(item.source)}>
+            <View style={styles.thumbnailContainer}>
+              <Image 
+                source={require('../../assets/pdf.jpg')} 
+                style={styles.thumbnail} 
+                resizeMode="contain" 
+              />
+              <Text style={styles.title}>{item.title}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
+      />
+      <Modal visible={isPdfModalVisible} onRequestClose={handleClosePdf}>
+        <View style={styles.modalContainer}>
+            <WebView
+              style={styles.pdfViewer}
+              source={{ uri: currentPdf }}
+              onLoad={() => {
+                setLoadingPdf(false);
+              }}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                setError('Failed to load PDF. Please try again.');
+                setLoadingPdf(false);
+              }}
+              originWhitelist={['*']}
+            />
+        </View>
+      </Modal>
+    </View>
+  );
+};
 
 export default function ReadingScreen() {
   const [loading, setLoading] = useState(true);
@@ -135,7 +204,6 @@ export default function ReadingScreen() {
         setData(result);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching data:', error);
         setLoading(false);
       }
     };
@@ -152,7 +220,7 @@ export default function ReadingScreen() {
   const textSections = data.filter(item => item.format == 'Text');
   const imageSections = data.filter(item => item.format == 'Image');
   const videoSections = data.filter(item => item.format == 'Video');
-
+  const pdfSections = data.filter(item => item.format == 'Pdf');
   return (
     <TabsProvider defaultIndex={0}>
       <Tabs>
@@ -164,6 +232,9 @@ export default function ReadingScreen() {
         </TabScreen>
         <TabScreen label="Video">
           <VideoTab sections={videoSections} />
+        </TabScreen>
+        <TabScreen label="Pdf">
+          <PdfTab sections={pdfSections} />
         </TabScreen>
       </Tabs>
     </TabsProvider>
@@ -278,5 +349,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-  }
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pdfViewer: {
+    flex: 1,
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
+  },
 });

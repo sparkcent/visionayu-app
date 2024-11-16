@@ -41,7 +41,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setOtherList(data.otherList);
         setWhatsAppUrl(data.whatsapp);
       } catch (error) {
-        console.error('Failed to fetch data:', error);
       } finally {
         setLoading(false);
       }

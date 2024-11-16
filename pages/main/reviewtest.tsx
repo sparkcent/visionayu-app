@@ -26,7 +26,6 @@ export default function TestReviewScreen() {
                 setLoading(false);
             })
             .catch(error => {
-                console.error('Error fetching data:', error);
                 setLoading(false);
             });
     }, []);
@@ -84,7 +83,6 @@ export default function TestReviewScreen() {
                                         </View>
                                     ));
                                 } catch (e) {
-                                    console.error('Failed to parse pairs:', e);
                                     return <Text style={styles.errorText}>Error loading pairs</Text>;
                                 }
                             })()}
@@ -150,7 +148,6 @@ export default function TestReviewScreen() {
                 setSubmitReport(false);
             }
         } catch (error) {
-            console.error('Error submitting report:', error);
             Alert.alert('Error', 'There was an error submitting your report.');
             setSubmitReport(false);
         }

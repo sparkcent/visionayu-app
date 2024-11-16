@@ -1,4 +1,17 @@
 {
   "name": "app",
-  "displayName": "Vision Ayurved"
+  "displayName": "Vision Ayurved",
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "5cafe183-ba48-41ba-9917-9d1b3cac1f2f"
+      }
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/5cafe183-ba48-41ba-9917-9d1b3cac1f2f"
+    },
+    "android": {},
+    "ios": {}
+  }
 }

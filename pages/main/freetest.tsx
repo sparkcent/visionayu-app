@@ -3,7 +3,7 @@ import { ListRenderItem, StyleSheet, View, Text, TouchableOpacity, Modal, Dimens
 import { TabsProvider, Tabs, TabScreen } from 'react-native-paper-tabs';
 import { BASE_URL, Exam } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator,Button, Icon, IconButton, MD3Colors } from 'react-native-paper';
+import { ActivityIndicator,Button, Chip, Icon, IconButton, MD3Colors } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 
 const formatDate = (dateString: any) => {
@@ -136,13 +136,12 @@ const SolvedTab = ({ data }: { data: Exam[] }) => {
                     <Text style={styles.attemptText}>Review Exam</Text>
                     <IconButton 
                         icon="motion-play" 
-                        size={44} 
-                        onPress={() => {
-                            navigation.navigate('Review', {
-                                myexamid:item.myexamid
-                            });
-                        }}
+                        size={40}
+                        onPress={() => {navigation.navigate('Review', {myexamid:item.myexamid});}}
                     />
+                    <Chip style={styles.attemptRank} icon="trophy" 
+                    onPress={() => {navigation.navigate('Ranking', {examid:item.examid,title:item.title});}}
+                    >Ranking</Chip>
                 </View>
             </View>
         </View>
@@ -218,6 +217,9 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         color: 'black',
+    },
+    attemptRank:{
+        marginBottom:10
     },
     content:{
         color:'black'

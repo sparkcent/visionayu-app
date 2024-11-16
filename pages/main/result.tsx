@@ -3,6 +3,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, BackHandler, Dimensions } from 'react-native';
 import { Button, useTheme } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 
 export default function TestResultScreen() {
   const { colors } = useTheme();
@@ -70,8 +71,8 @@ export default function TestResultScreen() {
         if (storedName !== null) {
           setName(storedName);
         }
-      } catch (error) {
-        console.error('Failed to fetch the name:', error);
+      } catch (error:any) {
+        Toast.show({type: 'error',position: 'top', text1: 'Failed to fetch the name', text2: error})
       }
     };
 
