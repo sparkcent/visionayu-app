@@ -51,6 +51,7 @@ android/.gradle/
 android/.idea/
 android/build/
 android/app/build/
+android/app/release/app-release.apk
 # Optional npm cache directory
 .npm
 
