@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ListRenderItem, StyleSheet, View, Text, TouchableOpacity, Modal, Dimensions, FlatList } from 'react-native';
+import { ListRenderItem, StyleSheet, View, Text, Modal, Dimensions, FlatList } from 'react-native';
 import { TabsProvider, Tabs, TabScreen } from 'react-native-paper-tabs';
 import { BASE_URL, Exam } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, Button, Chip, Icon, IconButton, MD2Colors } from 'react-native-paper';
+import { ActivityIndicator, Button, Chip, IconButton } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 const AllTab = ({ data }: { data: Exam[] }) => {
     const navigation = useNavigation<any>();
@@ -109,7 +110,8 @@ const formatDate = (dateString: any) => {
 };
 const SolvedTab = ({ data }: { data: Exam[] }) => {
     const navigation = useNavigation<any>();
-
+    const currentDate = new Date();
+    const todayStart = new Date( currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(),9, 0, 0 );
     const renderItem: ListRenderItem<Exam> = ({ item }) => (
         <View style={styles.itemContainer}>
             <View style={{flex:1,flexDirection:'row',justifyContent:'space-between',backgroundColor:'#316FF6'}}>
@@ -139,7 +141,21 @@ const SolvedTab = ({ data }: { data: Exam[] }) => {
                         onPress={() => {navigation.navigate('Review', {myexamid:item.myexamid});}}
                     />
                     <Chip style={styles.attemptRank} icon="trophy" 
-                    onPress={() => {navigation.navigate('Ranking', {examid:item.examid,title:item.title});}}
+                    onPress={() => {
+                        const submittedDate = new Date(item.submitted);
+                        if (submittedDate.getDate() == currentDate.getDate()) {
+                          Toast.show({
+                            type: 'error',
+                            position: 'top',
+                            text1: 'Ranking will be displayed tomorrow after 9 am',
+                          });
+                        } else {
+                          navigation.navigate('Ranking', {
+                            examid: item.examid,
+                            title: item.title,
+                          });
+                        }
+                    }}
                     >Ranking</Chip>
                 </View>
             </View>

@@ -5,7 +5,7 @@ import { BASE_URL, Exam } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator,Button, Chip, Icon, IconButton, MD3Colors } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-
+import Toast from 'react-native-toast-message';
 const formatDate = (dateString: any) => {
     const options:any = { day: 'numeric', month: 'short', year: 'numeric' };
     const date = new Date(dateString);
@@ -109,7 +109,8 @@ const AllTab = ({ data }: { data: Exam[] }) => {
 
 const SolvedTab = ({ data }: { data: Exam[] }) => {
     const navigation = useNavigation<any>();
-
+    const currentDate = new Date();
+    const todayStart = new Date( currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(),9, 0, 0 );
     const renderItem: ListRenderItem<Exam> = ({ item }) => (
         <View style={styles.itemContainer}>
             <View style={{flex:1,flexDirection:'row',justifyContent:'space-between',backgroundColor:'#316FF6'}}>
@@ -140,7 +141,24 @@ const SolvedTab = ({ data }: { data: Exam[] }) => {
                         onPress={() => {navigation.navigate('Review', {myexamid:item.myexamid});}}
                     />
                     <Chip style={styles.attemptRank} icon="trophy" 
-                    onPress={() => {navigation.navigate('Ranking', {examid:item.examid,title:item.title});}}
+                    onPress={() => {
+                        const submittedDate = new Date(item.submitted);
+                        
+                        if (submittedDate.getDate() == currentDate.getDate()) {
+                          // Submitted date is before today
+                          Toast.show({
+                            type: 'error',
+                            position: 'top',
+                            text1: 'Ranking will be displayed tomorrow after 9 am',
+                          });
+                        } else {
+                          // Allow navigation if conditions are not met
+                          navigation.navigate('Ranking', {
+                            examid: item.examid,
+                            title: item.title,
+                          });
+                        }
+                    }}
                     >Ranking</Chip>
                 </View>
             </View>

@@ -3,6 +3,7 @@ import { View, StyleSheet, Image, TouchableOpacity, Text } from 'react-native';
 import { Button, Snackbar, TextInput, useTheme } from 'react-native-paper';
 import { BASE_URL } from './types';
 import { useNavigation } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 export default function ForgotScreen() {
     const { colors } = useTheme();
@@ -40,13 +41,17 @@ export default function ForgotScreen() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.value, password: password.value }),
             });
-            const result = await response.json();
+            const result:any = await response.json();
             if (!response.ok) {
                 throw new Error(result.message || 'Something went wrong');
             }
             if (result.status === 'success') {
-                setSnackbarMessage("Password Updated Successfully");
-                setVisible(true);
+                Toast.show({
+                    type: 'success',  
+                    position: 'top',  
+                    text1: 'Forgot Password', 
+                    text2: 'Password Updated Successfully', 
+                });
                 navigation.navigate('Login')
             } else {
                 setSnackbarMessage(result.message);
@@ -73,13 +78,17 @@ export default function ForgotScreen() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.value }),
             });
-            const result = await response.json();
+            const result:any = await response.json();
             if (!response.ok) {
                 throw new Error(result.message || 'Something went wrong');
             }
             if (result.status === 'success') {
-                setSnackbarMessage("Otp send on mail id");
-                setVisible(true);
+                Toast.show({
+                    type: 'success',  
+                    position: 'top',  
+                    text1: 'Forgot Password', 
+                    text2: 'OTP Send on Mail', 
+                });
             } else {
                 setSnackbarMessage(result.message);
                 setVisible(true);
@@ -112,7 +121,7 @@ export default function ForgotScreen() {
                     otp: otp.value
                 }),
             });
-            const result = await response.json();
+            const result:any = await response.json();
             if (!response.ok) {
                 throw new Error(result.message || 'Something went wrong');
             }
@@ -154,7 +163,7 @@ export default function ForgotScreen() {
                     keyboardType='email-address'
                     label="Email Id"
                     value={email.value}
-                    onChangeText={(text) => setEmail({ value: text, error: '' })}
+                    onChangeText={(text: any) => setEmail({ value: text, error: '' })}
                     left={<TextInput.Icon icon="email" />}
                     style={[styles.input, { backgroundColor: theme.colors.surface }]}
                     error={!!email.error}
@@ -168,7 +177,7 @@ export default function ForgotScreen() {
                             keyboardType='numeric'
                             label="OTP"
                             value={otp.value}
-                            onChangeText={(text) => setOtp({ value: text, error: '' })}
+                            onChangeText={(text: any) => setOtp({ value: text, error: '' })}
                             left={<TextInput.Icon icon="lastpass" />}
                             style={[styles.input, { backgroundColor: theme.colors.surface}]}
                             error={!!otp.error}
@@ -193,7 +202,7 @@ export default function ForgotScreen() {
                             secureTextEntry={!passwordVisible}
                             label="Password"
                             value={password.value}
-                            onChangeText={(text) => setPassword({ value: text, error: '' })}
+                            onChangeText={(text: any) => setPassword({ value: text, error: '' })}
                             left={<TextInput.Icon icon="lock" />}
                             right={ <TextInput.Icon icon={passwordVisible ? "eye-off" : "eye"} onPress={() => setPasswordVisible(!passwordVisible)} /> }
                             error={!!password.error}
@@ -206,7 +215,7 @@ export default function ForgotScreen() {
                             secureTextEntry={!passwordVisible}
                             label="Confirm Password"
                             value={confirmPassword.value}
-                            onChangeText={(text) => setConfirmPassword({ value: text, error: '' })}
+                            onChangeText={(text: any) => setConfirmPassword({ value: text, error: '' })}
                             left={<TextInput.Icon icon="lock" />}
                             right={
                                 <TextInput.Icon icon={passwordVisible ? "eye-off" : "eye"} onPress={() => setPasswordVisible(!passwordVisible)} />

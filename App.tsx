@@ -1,7 +1,7 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View, Dimensions, StatusBar, TouchableOpacity, Text } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, StatusBar, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DataProvider } from './pages/DataContext';
 import { PaperProvider } from 'react-native-paper';
@@ -27,59 +27,23 @@ import VideoDetailsScreen from './pages/main/videoDetails';
 import PaidTestScreen from './pages/main/paidtest';
 import OtherExamsScreen from './pages/main/otherExams';
 import ProfileScreen from './pages/main/profile';
-import Video from 'react-native-video';
 import RankingScreen from './pages/main/ranking';
 import Toast from 'react-native-toast-message';
+import SplashScreen from './pages/SplashScreen';
 
-const IntroVideo: React.FC<{ onVideoEnd: () => void }> = ({ onVideoEnd }) => {
-  const screenWidth = Dimensions.get('window').width;
-  const screenHeight = Dimensions.get('window').height;
-  return (
-    <View style={[styles.videoContainer, { width: screenWidth, height: screenHeight }]}>
-      <Video
-        source={require('./assets/intro.mp4')}
-        style={styles.video}
-        controls={false}
-        resizeMode="contain"
-        onEnd={onVideoEnd}
-      />
-    </View>
-  );
-};
-
-const IntroVideoScreen: React.FC = () => {
-  const navigation = useNavigation<any>();
-
-  const handleVideoEnd = async () => {
-    const token = await AsyncStorage.getItem('authToken');
-    if (token) {
-      navigation.navigate('HomeScreen');
-    } else {
-      navigation.navigate('Login');
-    }
-  };
-
-  return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={styles.scrollView}>
-      <IntroVideo onVideoEnd={handleVideoEnd} />
-    </ScrollView>
-  );
-};
 
 const Stack = createNativeStackNavigator<any>();
 
 function App(): React.JSX.Element {
+  const [isSplashFinished, setIsSplashFinished] = useState(false);
   return (
     <PaperProvider>
       <NavigationContainer>
         <SafeAreaView style={styles.container}>
           <StatusBar backgroundColor={'#316FF6'}/>
           <DataProvider>
-              <Stack.Navigator initialRouteName="IntroVideo" screenOptions={{
-                headerStyle: { backgroundColor: '#316FF6' },
-                headerTintColor: '#fff',
-                }}>
-                <Stack.Screen name="IntroVideo" component={IntroVideoScreen} options={{ headerShown: false }} />
+            <Stack.Navigator initialRouteName={isSplashFinished ? 'HomeScreen' : 'SplashScreen'} screenOptions={{ headerStyle: { backgroundColor: '#316FF6' }, headerTintColor: '#fff' }}>
+                <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Registration" component={RegistrationScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{ headerShown: false }} />

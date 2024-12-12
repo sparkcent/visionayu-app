@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text,Image, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Modal } from 'react-native';
+import { View, Text,Image, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Modal, AppState } from 'react-native';
 import { ActivityIndicator, Button, Chip, Icon, RadioButton, } from 'react-native-paper';
 import { BASE_URL, MAIN_URL, Question } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-
 const { width: screenWidth } = Dimensions.get('window');
 const NUM_ITEMS_PER_ROW = 10;
 const itemWidth = (screenWidth - (NUM_ITEMS_PER_ROW + 1) * 8) / NUM_ITEMS_PER_ROW;
@@ -25,17 +24,18 @@ export default function ExamScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [examResponse, setExamResponse] = useState('');
-  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<any>('');
   const [isTimeUp, setIsTimeUp] = useState(false);
+  const [startTime, setStartTime] = useState(Date.now());
   useEffect(() => {
-    const fetchAuthToken = async () => {
+    const loadData = async () => {
       const token = await AsyncStorage.getItem('authToken');
-      setAuthToken(token); // Save it to state
-    };
-    fetchAuthToken();
-    const fetchQuestions = async () => {
+      setAuthToken(token);
+
       try {
-        const response = await fetch(`${BASE_URL}getQuestions&qsbankid=${searchdata.qbid}&questions=${searchdata.questions}`);
+        const response = await fetch(
+          `${BASE_URL}getQuestions&qsbankid=${searchdata.qbid}&questions=${searchdata.questions}`
+        );
         const data = await response.json();
         if (data) {
           setTimer(parseInt(timeString) * 60);
@@ -49,24 +49,56 @@ export default function ExamScreen() {
         setError('Failed to load questions.');
         setLoading(false);
       }
-    };
-    fetchQuestions();
-    const interval = setInterval(() => {
-      setTimer((prev) => {
-        if (prev > 1 || prev === 0) {
-          return prev - 1;
-        } else {
-          clearInterval(interval);
-          setIsTimeUp(true);
-          setModalVisible(true);
-          setLoadingExam(false);
-          return 0;
-        }
-      });
-    }, 1000);
   
-    return () => clearInterval(interval);
-  }, [searchdata.id, searchdata.time]);
+      let interval: NodeJS.Timeout;
+      let backgroundTimestamp: number | null = null;
+  
+      const startTimer = () => {
+        interval = setInterval(() => {
+          setTimer((prev) => {
+            if (prev > 1) {
+              return prev - 1;
+            } else {
+              clearInterval(interval);
+              setIsTimeUp(true);
+              setModalVisible(true);
+              setLoadingExam(false);
+              return 0;
+            }
+          });
+        }, 1000);
+      };
+    
+      const stopTimer = () => {
+        clearInterval(interval);
+      };
+  
+      const handleAppStateChange = (nextAppState: any) => {
+        if (nextAppState === 'background') {
+          backgroundTimestamp = Date.now();
+          stopTimer();
+        } else if (nextAppState === 'active') {
+          if (backgroundTimestamp) {
+            const elapsed = Math.floor((Date.now() - backgroundTimestamp) / 1000);
+            setTimer((prev) => Math.max(prev - elapsed, 0));
+          }
+          backgroundTimestamp = null;
+          startTimer();
+        }
+      };
+    
+      startTimer();
+  
+      const appStateListener = AppState.addEventListener('change', handleAppStateChange);
+    
+      return () => {
+        stopTimer();
+        appStateListener.remove();
+      };
+    };
+    loadData();
+  }, [searchdata.qbid, searchdata.time]);
+  
 
   let currentQuestion = questions[currentQuestionIndex] || {};
   const options = [
@@ -87,6 +119,7 @@ export default function ExamScreen() {
         };
       });
       if(submissionData.length > 0){
+        const solvedCount = submissionData.filter((item) => item.option != '').length;
         const response = await fetch(`${BASE_URL}submitExam`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -94,7 +127,7 @@ export default function ExamScreen() {
             questions: submissionData,
             token: authToken,
             examid: searchdata.examid,
-            solved: Object.values(selectedOptions).filter(option => option !== null).length,
+            solved: solvedCount,
             totalQuestion: searchdata.questions,
             correct: searchdata.correct,
           }),
@@ -178,7 +211,7 @@ export default function ExamScreen() {
     const isAnswered = selectedOptions[currentQuestionId] != null;
     setQuestionStatus((prevStatus) =>
       prevStatus.map((status, idx) =>
-        idx === currentQuestionIndex ? (isAnswered ? 'answered' : 'skipped') : status
+        idx == currentQuestionIndex ? (isAnswered ? 'answered' : 'skipped') : status
       )
     );
     setCurrentQuestionIndex(index);
@@ -190,18 +223,16 @@ export default function ExamScreen() {
   };
   const checkResult = (examResponse:any) =>{
     setIsModalVisible(false);
-    let answered = Object.values(questionStatus).filter(status => status == 'answered').length;
-    let solvedQuestions = Object.values(selectedOptions).filter(option => option !== null).length
     navigation.navigate('Result', {
         name:searchdata.name,
         questions:searchdata.questions,
         correct:searchdata.correct,
         time:timeString,
         myexamid:examResponse.myexamid,
-        answered:answered,
-        unsolved:Number(searchdata.questions) - solvedQuestions,
+        answered:examResponse.solved,
+        unsolved:Number(searchdata.questions) - examResponse.solved,
         correctans:examResponse.correctans,
-        incorrect:solvedQuestions - examResponse.correctans,
+        incorrect:examResponse.solved - examResponse.correctans,
         formula:examResponse.formula,
         marksobtained:examResponse.marksobtained,
         percentage:examResponse.percentage
@@ -586,7 +617,9 @@ option: {
 optionText: {
   fontSize: 16,
   marginLeft: 10,
-  color:'black'
+  color:'black',
+  flexWrap: 'wrap',
+  flexShrink: 1,
 },
 radioContainer: {
   marginRight: 10,

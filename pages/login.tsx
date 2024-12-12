@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Image, TouchableOpacity, Text } from 'react-native';
 import { Button, TextInput, useTheme } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { StackActions, useNavigation } from '@react-navigation/native';
 import { BASE_URL } from './types';
 import Toast from 'react-native-toast-message';
 export default function LoginScreen() {
@@ -27,30 +27,51 @@ export default function LoginScreen() {
         setGeneralError('');
         try {
             const response = await fetch(`${BASE_URL}checkUser`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.value, password: password.value }),
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: email.value, password: password.value }),
             });
-            const result = await response.json();
-            if (result.status == 'failed') {
-                Toast.show({
-                    type: 'error',  
-                    position: 'top',  
-                    text1: 'Login Failed', 
-                    text2: result.message, 
-                });
-            }else{
-                await AsyncStorage.setItem('authToken', result.token);
-                await AsyncStorage.setItem('authName', result.name);
-                navigation.navigate('HomeScreen');
+          
+            if (!response.ok) {
+              throw new Error('Failed to authenticate. Please try again.');
             }
-            
-        } catch (error: any) {
+          
+            const result = await response.json();
+            if (result.status === 'failed') {
+              Toast.show({
+                type: 'error',
+                position: 'top',
+                text1: 'Login Failed',
+                text1Style:{fontSize:19},
+                text2: result.message,
+                text2Style:{fontSize:15},
+              });
+              return;
+            }
+          
+            await Promise.all([
+              AsyncStorage.setItem('authToken', result.token),
+              AsyncStorage.setItem('authName', result.name),
+            ]);
+
+            const storedToken = await AsyncStorage.getItem('authToken');
+            if (storedToken) {
+                navigation.replace('HomeScreen');
+            } else {
+              Toast.show({
+                type: 'error',
+                position: 'top',
+                text1: 'Login Issue',
+                text2: 'Unable to verify token. Please try to login again.',
+              });
+            }
+        } catch (error:any) {
             Toast.show({
-                type: 'error',  
-                position: 'top',  
-                text1: 'Login Failed', 
-                text2: 'Something went wrong', 
+                type: 'error',
+                position: 'top',
+                text1: 'Login Failed',
+                text1Style:{fontSize:19},
+                text2: error.message || 'Something went wrong',
             });
             setGeneralError(error.message);
         } finally {

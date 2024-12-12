@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './types';
 import { useData } from './DataContext';
 import { useNavigation } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 export default function RegistrationScreen() {
     const { colors } = useTheme();
@@ -37,9 +38,15 @@ export default function RegistrationScreen() {
     const onLoginPressed = async () => {
         const emailError = emailValidator(email.value);
         const passwordError = passwordValidator(password.value);
-        if (emailError || passwordError) {
+        const fnameError = fname.value ? '' : 'First Name is required';
+        const lnameError = lname.value ? '' : 'Last Name is required';
+        const whatsappError = whatsapp.value ? '' : 'Number is required';
+        if (emailError || passwordError || fnameError || lnameError ) {
             setEmail({ ...email, error: emailError });
             setPassword({ ...password, error: passwordError });
+            setFname({ ...fname, error: fnameError });
+            setLname({ ...lname, error: lnameError });
+            setWhatsApp({ ...whatsapp, error: whatsappError });
             return;
         }
 
@@ -61,24 +68,46 @@ export default function RegistrationScreen() {
                     city: city.value,
                 }),
             });
+        
             const result = await response.json();
+        
             if (!response.ok) {
                 throw new Error(result.message || 'Something went wrong');
             }
+        
             if (result.status === 'success') {
-                await AsyncStorage.setItem('userToken', result.token);
-                await AsyncStorage.setItem('authName', result.name);
-                navigation.navigate('HomeScreen');
+                await Promise.all([
+                    AsyncStorage.setItem('authToken', result.token),
+                    AsyncStorage.setItem('authName', result.name),
+                ]);
+        
+                const token = await AsyncStorage.getItem('authToken');
+                if (token) {
+                    navigation.replace('HomeScreen');
+                } else {
+                    Toast.show({
+                        type: 'error',
+                        position: 'top',
+                        text1: 'Registration Issue',
+                        text2: 'Token not available, please try to login again',
+                    });
+                }
             } else {
-                setLoading(false);
                 setSnackbarMessage(result.message);
-                setVisible(true)
+                setVisible(true);
             }
         } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                position: 'top',
+                text1: 'Error',
+                text2: error.message || 'An unexpected error occurred',
+            });
             setGeneralError(error.message);
         } finally {
             setLoading(false);
         }
+        
     };
 
     const emailValidator = (email: string) => {
@@ -104,7 +133,14 @@ export default function RegistrationScreen() {
         }
         return null;
     };
-
+    const handleWhatsAppChange = (text: string) => {
+        const formattedText = text.replace(/[^0-9]/g, '');
+        if (formattedText.length <= 10) {
+            setWhatsApp({ value: formattedText, error: '' });
+        } else {
+            setWhatsApp({ value: formattedText.slice(0, 10), error: 'Phone number must be 10 digits' });
+        }
+    };
     return (
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
             <Image style={styles.tinyLogo} source={require('../assets/logo.png')} />
@@ -123,17 +159,13 @@ export default function RegistrationScreen() {
                 />
             </View>
             <View style={styles.nameContainer}>
-                <TextInput mode="outlined" keyboardType='phone-pad' label="WhatsApp No." value={whatsapp.value} onChangeText={(text) => setWhatsApp({ value: text, error: '' })} left={<TextInput.Icon icon="cellphone" />} style={[styles.input, { backgroundColor: colors.surface }]} error={!!whatsapp.error} />
+                <TextInput mode="outlined" keyboardType='numeric' label="WhatsApp No." value={whatsapp.value} onChangeText={(text) => handleWhatsAppChange(text)} left={<TextInput.Icon icon="cellphone" />} style={[styles.input, { backgroundColor: colors.surface }]} error={!!whatsapp.error} />
             </View>
             <View style={styles.nameContainer}>
                 <TextInput mode="outlined" keyboardType='email-address' label="Email Id" value={email.value} onChangeText={(text) => setEmail({ value: text.toLowerCase(), error: '' })} left={<TextInput.Icon icon="email" />} style={[styles.input, { backgroundColor: colors.surface }]} error={!!email.error} />
             </View>
             <View style={styles.nameContainer}>
-                <TextInput
-                    mode="outlined"
-                    secureTextEntry={!passwordVisible}
-                    label="Password"
-                    value={password.value}
+                <TextInput mode="outlined" secureTextEntry={!passwordVisible} label="Password" value={password.value}
                     onChangeText={(text) => setPassword({ value: text, error: '' })}
                     left={<TextInput.Icon icon="lock" />}
                     right={<TextInput.Icon icon={passwordVisible ? "eye-off" : "eye"} onPress={() => setPasswordVisible(!passwordVisible)} />}
@@ -204,7 +236,7 @@ export default function RegistrationScreen() {
             </View>
             <Button style={[styles.button]} icon={loading ? 'loading' : 'login'} loading={loading ? true : false} mode="contained" onPress={onLoginPressed}>{loading ? 'SIGNING UP...' : 'REGISTER'}</Button>
             <Snackbar style={styles.snackbarContainer} visible={visible} onDismiss={onDismissSnackBar}action={{ label: 'Close', onPress: () => {} }}>{snackbarMessage}</Snackbar>
-            <TouchableOpacity style={{ width: '100%', marginTop: 30 }} onPress={() => navigation.navigate('Login')}>
+            <TouchableOpacity style={{ width: '100%', marginTop: 30,marginBottom:50 }} onPress={() => navigation.navigate('Login')}>
                 <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: '600', fontStyle: 'italic', color: colors.onSurface }}>
                     Already have an Account? Back To Login
                 </Text>
@@ -217,15 +249,15 @@ const styles = StyleSheet.create({
     container: {flexGrow: 1,alignItems: 'center',padding: 16,width: '100%',backgroundColor:'white'},
     nameContainer: {flexDirection: 'row',width: '100%',justifyContent: 'space-between',},
     nameInput: {flex: 1,},
-    input: {width: '100%',marginBottom: 10,},
+    input: {width: '100%',marginBottom: 10,color:'black'},
     tinyLogo: {width: 150,height: 150},
     button: {width: '70%',marginTop: 60,},
-    dropdown: {height: 50,width: '100%',borderColor: 'black',borderWidth: 0.6,borderRadius: 6,paddingHorizontal: 15,},
+    dropdown: {height: 50,width: '100%',borderColor: 'black',color:'black',borderWidth: 0.6,borderRadius: 6,paddingHorizontal: 15,},
     icon: {marginRight: 5,},
     label: {position: 'absolute',backgroundColor: 'white',left: 8,top: -5,zIndex: 999,paddingHorizontal: 5,fontSize: 12,},
-    placeholderStyle: {fontSize: 16,left:15},
-    selectedTextStyle: {fontSize: 16,left: 15,},
+    placeholderStyle: {fontSize: 16,left:15,color:'black'},
+    selectedTextStyle: {fontSize: 16,left: 15,color:'black'},
     iconStyle: {width: 20,height: 20,},
-    inputSearchStyle: {height: 40,fontSize: 16 },
+    inputSearchStyle: {height: 40,fontSize: 16,color:'black' },
     snackbarContainer: { zIndex: 1000 },
 });

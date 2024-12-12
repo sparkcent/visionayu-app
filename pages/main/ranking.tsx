@@ -8,11 +8,11 @@ export default function RankingScreen() {
     const searchdata:any = useRoute().params;
     const [loading, setLoading] = useState(true);
     const [ranking, setRanking] = useState<any[]>([]);
-    const [authToken, setAuthToken] = useState<string | null>(null);
+    const [authToken, setAuthToken] = useState<any>(null);
     useEffect(() => {
         const fetchAuthToken = async () => {
             const token = await AsyncStorage.getItem('authToken');
-            setAuthToken(token); // Save it to state
+            setAuthToken(token);
         };
 
         fetchAuthToken();
